@@ -3,12 +3,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import 'client_info.dart';
 
-class Member extends StatefulWidget {
-  @override
-
-  MemberState createState() => MemberState();
-}
-
 class User {
   int id;
   String name;
@@ -19,14 +13,17 @@ class User {
 
   User.fromJson(Map<String, dynamic> json)
       : id = json['id'],
-        name = json['name'],
-        cover = json['cover'],
-        reachTime = json['reachTime'];
+        name = json['name'];
 
   Map<String, dynamic> toJson() => {'id': id, 'name': name};
 }
 
-class MemberState extends State{
+class VisitorsNew extends StatefulWidget {
+  @override
+  VisitorsNewState createState() => VisitorsNewState();
+}
+
+class VisitorsNewState extends State {
   Color _textColor = Color.fromRGBO(51, 51, 51, 1);
 
   final List<User> _userList = [
@@ -73,10 +70,13 @@ class MemberState extends State{
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Color.fromRGBO(255, 235, 152, 1),
-        title: Text('我的会员', style: TextStyle(
-          color: _textColor,
-          fontSize: ScreenUtil.getInstance().setSp(18),
-        ),),
+        title: Text(
+          '今日新客',
+          style: TextStyle(
+            color: _textColor,
+            fontSize: ScreenUtil.getInstance().setSp(18),
+          ),
+        ),
         centerTitle: true,
       ),
       body: Container(
@@ -87,7 +87,7 @@ class MemberState extends State{
         color: Color.fromRGBO(255, 247, 237, 1),
         child: ListView.builder(
           padding:
-          EdgeInsets.only(bottom: ScreenUtil.getInstance().setHeight(19)),
+              EdgeInsets.only(bottom: ScreenUtil.getInstance().setHeight(19)),
           shrinkWrap: true,
           itemCount: _userList.length,
           itemBuilder: (context, index) {

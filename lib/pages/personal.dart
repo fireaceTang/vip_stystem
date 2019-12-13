@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:vip_system/pages/feedback.dart' as prefix0;
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'login.dart';
+import 'my_info.dart';
+import 'safe.dart';
+import 'setting.dart';
 
 class Personal extends StatefulWidget {
   @override
@@ -9,13 +14,20 @@ class Personal extends StatefulWidget {
   PersonalState createState() => PersonalState();
 }
 
+class User {
+  int id;
+  String name;
+  String cover;
+
+  User(this.id, this.name, this.cover);
+}
+
 class PersonalState extends State {
   Color _textColor = Color.fromRGBO(51, 51, 51, 1);
 
-  Map _userInfo = {
-    'name': '攸攸宠物店',
-    'cover': 'https://ss2.bdstatic.com/70cFvnSh_Q1YnxGkpoWK1HF6hhy/it/u=1812655625,3146113561&fm=11&gp=0.jpg'
-  };
+  User _user = User(1, '攸攸的宠物店', 'https://ss2.bdstatic.com/70cFvnSh_Q1YnxGkpoWK1HF6hhy/it/u=1812655625,3146113561&fm=11&gp=0.jpg');
+
+  Future<SharedPreferences> _storage = SharedPreferences.getInstance();
 
   @override
   Widget build(BuildContext context) {
@@ -37,36 +49,41 @@ class PersonalState extends State {
                 ),
               ),
               child: Container(
+                margin: EdgeInsets.only(
+                    top: ScreenUtil.getInstance().setHeight(87)
+                ),
                 child: Column(
                   children: <Widget>[
-                    Column(
-                      children: <Widget>[
-                        Container(
-                          margin: EdgeInsets.only(
-                              top: ScreenUtil.getInstance().setHeight(87)
-                          ),
-                          child: ClipOval(
-                            child: FadeInImage.assetNetwork(
-                              width: ScreenUtil.getInstance().setHeight(96),
-                              height: ScreenUtil.getInstance().setHeight(96),
-                              placeholder: 'images/index_bg.png',
-                              image: _userInfo['cover'],
-                              fit: BoxFit.cover,
+                    GestureDetector(
+                      child: Column(
+                        children: <Widget>[
+                          Container(
+                            child: ClipOval(
+                              child: FadeInImage.assetNetwork(
+                                width: ScreenUtil.getInstance().setHeight(96),
+                                height: ScreenUtil.getInstance().setHeight(96),
+                                placeholder: 'images/index_bg.png',
+                                image: _user.cover,
+                                fit: BoxFit.cover,
+                              ),
                             ),
                           ),
-                        ),
-                        Container(
-                          margin: EdgeInsets.only(
-                            top: ScreenUtil.getInstance().setHeight(14)
-                          ),
-                          child: Text(_userInfo['name'],
-                            style: TextStyle(
-                              color: _textColor,
-                              fontSize: ScreenUtil.getInstance().setSp(16)
+                          Container(
+                            margin: EdgeInsets.only(
+                                top: ScreenUtil.getInstance().setHeight(14)
                             ),
-                          ),
-                        )
-                      ],
+                            child: Text(_user.name,
+                              style: TextStyle(
+                                  color: _textColor,
+                                  fontSize: ScreenUtil.getInstance().setSp(16)
+                              ),
+                            ),
+                          )
+                        ],
+                      ),
+                      onTap: () {
+                        Navigator.push(context, MaterialPageRoute(builder: (context) => MyInfo()));
+                      },
                     ),
                     Container(
                       margin: EdgeInsets.only(
@@ -77,7 +94,7 @@ class PersonalState extends State {
                         children: <Widget>[
                           GestureDetector(
                             child: Container(
-                              width: ScreenUtil.getInstance().setWidth(62),
+                              width: ScreenUtil.getInstance().setHeight(62),
                               height: ScreenUtil.getInstance().setHeight(72),
                               decoration: BoxDecoration(
                                   color: Colors.white,
@@ -117,12 +134,12 @@ class PersonalState extends State {
                               ),
                             ),
                             onTap: () {
-                              print('个人信息');
+                              Navigator.push(context, MaterialPageRoute(builder: (context) => MyInfo()));
                             },
                           ),
                           GestureDetector(
                             child: Container(
-                              width: ScreenUtil.getInstance().setWidth(62),
+                              width: ScreenUtil.getInstance().setHeight(62),
                               height: ScreenUtil.getInstance().setHeight(72),
                               decoration: BoxDecoration(
                                   color: Colors.white,
@@ -162,12 +179,12 @@ class PersonalState extends State {
                               ),
                             ),
                             onTap: () {
-                              print('账号安全');
+                              Navigator.push(context, MaterialPageRoute(builder: (context) => Safe()));
                             },
                           ),
                           GestureDetector(
                             child: Container(
-                              width: ScreenUtil.getInstance().setWidth(62),
+                              width: ScreenUtil.getInstance().setHeight(62),
                               height: ScreenUtil.getInstance().setHeight(72),
                               decoration: BoxDecoration(
                                   color: Colors.white,
@@ -207,7 +224,7 @@ class PersonalState extends State {
                               ),
                             ),
                             onTap: () {
-                              print('设置');
+                              Navigator.push(context, MaterialPageRoute(builder: (context) => Setting()));
                             },
                           ),
                         ],
@@ -254,7 +271,7 @@ class PersonalState extends State {
                       ),
                     ),
                     onTap: () {
-                      print('问题反馈');
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => prefix0.Feedback()));
                     },
                   ),
                   Container(
@@ -288,9 +305,16 @@ class PersonalState extends State {
                     ),
                     child: FlatButton(
                       color: Color.fromRGBO(255, 164, 6, 1),
-                      child: Text('退出登录'),
+                      child: Text('退出登录', style: TextStyle(
+                        color: Colors.white,
+                        fontSize: ScreenUtil.getInstance().setSp(16),
+                      ),),
                       onPressed: () {
-                        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Login()));
+                        _storage.then((storage) {
+                          storage.remove('userInfo');
+
+                          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Login()));
+                        });
                       },
                     ),
                   )

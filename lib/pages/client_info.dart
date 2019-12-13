@@ -8,7 +8,11 @@ class ClientInfo extends StatefulWidget {
 }
 
 class ClientInfoState extends State {
-  Color _textColor = Color.fromRGBO(42, 56, 85, 1);
+  Color _textColor = Color.fromRGBO(51, 51, 51, 1);
+  TextStyle _textStyle = TextStyle(
+    fontSize: ScreenUtil.getInstance().setSp(14),
+    color: Color.fromRGBO(102, 102, 102, 1),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -23,7 +27,8 @@ class ClientInfoState extends State {
           },
         ),
         title: Text('客户信息', style: TextStyle(
-            color: _textColor
+          color: _textColor,
+          fontSize: ScreenUtil.getInstance().setSp(18),
         ),),
         backgroundColor: Color.fromRGBO(255, 235, 152, 1),
         centerTitle: true,
@@ -37,30 +42,31 @@ class ClientInfoState extends State {
                 children: <Widget>[
                   GestureDetector(
                     child: Container(
-                      padding: EdgeInsets.fromLTRB(0, ScreenUtil.getInstance().setWidth(20), 0, ScreenUtil.getInstance().setWidth(15)),
+                      height: ScreenUtil.getInstance().setHeight(83),
                       decoration: BoxDecoration(
                         border: Border(
                           bottom: BorderSide(
                             width: 1,
-                            color: Colors.grey
+                            color: Color.fromRGBO(245, 246, 246, 1),
                           )
                         )
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: <Widget>[
-                          Text('照片', style: TextStyle(color: Colors.grey, height: 1),),
+                          Text('照片', style: _textStyle),
                           Container(
                             child: Row(
                               children: <Widget>[
                                 CircleAvatar(
                                   backgroundImage: AssetImage('assets/login_bg.png'),
+                                  radius: ScreenUtil.getInstance().setWidth(30),
                                 ),
                                 Container(
                                   margin: EdgeInsets.only(
-                                    left: ScreenUtil.getInstance().setWidth(5)
+                                    left: ScreenUtil.getInstance().setWidth(15)
                                   ),
-                                  child: Icon(Icons.arrow_forward_ios, color: Colors.grey, size: ScreenUtil.getInstance().setWidth(14),),
+                                  child: Icon(Icons.arrow_forward_ios, color: _textColor, size: ScreenUtil.getInstance().setWidth(14),),
                                 )
                               ],
                             ),
@@ -74,19 +80,19 @@ class ClientInfoState extends State {
                   ),
                   GestureDetector(
                     child: Container(
-                      padding: EdgeInsets.fromLTRB(0, ScreenUtil.getInstance().setWidth(20), 0, ScreenUtil.getInstance().setWidth(15)),
+                      height: ScreenUtil.getInstance().setHeight(68),
                       decoration: BoxDecoration(
                           border: Border(
                               bottom: BorderSide(
                                   width: 1,
-                                  color: Colors.grey
+                                  color: Color.fromRGBO(245, 246, 246, 1)
                               )
                           )
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: <Widget>[
-                          Text('姓名', style: TextStyle(color: Colors.grey, height: 1),),
+                          Text('姓名', style: _textStyle),
                           Container(
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.center,
@@ -94,9 +100,9 @@ class ClientInfoState extends State {
                                 Text('庄早早', style: TextStyle(color: _textColor, height: 1),),
                                 Container(
                                   margin: EdgeInsets.only(
-                                      left: ScreenUtil.getInstance().setWidth(5)
+                                      left: ScreenUtil.getInstance().setWidth(15)
                                   ),
-                                  child: Icon(Icons.arrow_forward_ios, color: Colors.grey, size: ScreenUtil.getInstance().setWidth(14),),
+                                  child: Icon(Icons.arrow_forward_ios, color: _textColor, size: ScreenUtil.getInstance().setWidth(14),),
                                 )
                               ],
                             ),
@@ -110,19 +116,19 @@ class ClientInfoState extends State {
                   ),
                   GestureDetector(
                     child: Container(
-                      padding: EdgeInsets.fromLTRB(0, ScreenUtil.getInstance().setWidth(20), 0, ScreenUtil.getInstance().setWidth(15)),
+                      height: ScreenUtil.getInstance().setHeight(68),
                       decoration: BoxDecoration(
                           border: Border(
                               bottom: BorderSide(
                                   width: 1,
-                                  color: Colors.grey
+                                  color: Color.fromRGBO(245, 246, 246, 1)
                               )
                           )
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: <Widget>[
-                          Text('联系电话', style: TextStyle(color: Colors.grey, height: 1),),
+                          Text('联系电话', style: _textStyle),
                           Container(
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.center,
@@ -130,9 +136,9 @@ class ClientInfoState extends State {
                                 Text('15388900360', style: TextStyle(color: _textColor, height: 1),),
                                 Container(
                                   margin: EdgeInsets.only(
-                                      left: ScreenUtil.getInstance().setWidth(5)
+                                      left: ScreenUtil.getInstance().setWidth(15)
                                   ),
-                                  child: Icon(Icons.arrow_forward_ios, color: Colors.grey, size: ScreenUtil.getInstance().setWidth(14),),
+                                  child: Icon(Icons.arrow_forward_ios, color: _textColor, size: ScreenUtil.getInstance().setWidth(14),),
                                 )
                               ],
                             ),
@@ -146,11 +152,11 @@ class ClientInfoState extends State {
                   ),
                   GestureDetector(
                     child: Container(
-                      padding: EdgeInsets.fromLTRB(0, ScreenUtil.getInstance().setWidth(20), 0, ScreenUtil.getInstance().setWidth(15)),
+                      height: ScreenUtil.getInstance().setHeight(68),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: <Widget>[
-                          Text('姓名', style: TextStyle(color: Colors.grey, height: 1),),
+                          Text('用户属性', style: _textStyle),
                           Container(
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.center,
@@ -158,9 +164,9 @@ class ClientInfoState extends State {
                                 Text('黄金会员', style: TextStyle(color: _textColor, height: 1),),
                                 Container(
                                   margin: EdgeInsets.only(
-                                      left: ScreenUtil.getInstance().setWidth(5)
+                                      left: ScreenUtil.getInstance().setWidth(15)
                                   ),
-                                  child: Icon(Icons.arrow_forward_ios, color: Colors.grey, size: ScreenUtil.getInstance().setWidth(14),),
+                                  child: Icon(Icons.arrow_forward_ios, color: _textColor, size: ScreenUtil.getInstance().setWidth(14),),
                                 )
                               ],
                             ),
@@ -177,15 +183,15 @@ class ClientInfoState extends State {
             ),
             Container(
               margin: EdgeInsets.only(
-                top: ScreenUtil.getInstance().setHeight(50)
+                top: ScreenUtil.getInstance().setHeight(53)
               ),
               child: Wrap(
                 alignment: WrapAlignment.start,
                 children: <Widget>[
                   Text('备注：' + '喜欢下午到店，喜欢下午到店，喜欢下午到店，喜欢下午到店，喜欢下午到店，喜欢下午到店。', style: TextStyle(
-                    color: Colors.grey,
-                    height: 1.8
-                  ),)
+                    fontSize: ScreenUtil.getInstance().setSp(12),
+                    color: Color.fromRGBO(102, 102, 102, 1),
+                  ))
                 ],
               ),
             )
