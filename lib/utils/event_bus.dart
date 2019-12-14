@@ -8,3 +8,7 @@ class RequestEvent {
 
   RequestEvent(this.responseModel);
 }
+
+class UpdateInfoEvent {
+  UpdateInfoEvent();
+}

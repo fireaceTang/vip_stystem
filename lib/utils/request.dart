@@ -55,7 +55,7 @@ class Request {
         SharedPreferences.getInstance().then((share) {
           String token = share.getString('token');
           if (token != null) {
-            options.headers['authorization'] = token;
+            options.headers['token'] = token;
           }
         });
 

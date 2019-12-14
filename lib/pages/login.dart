@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 import '../model/request_model.dart';
 import '../utils/request.dart';
@@ -30,7 +31,6 @@ class LoginState extends State {
       'password': _password,
     });
   }
-
 
   @override
   void initState() {
@@ -331,7 +331,8 @@ class LoginState extends State {
                         _login(context).then((res) {
                           if (res.code == 200) {
                             _storage.then((storage) {
-                              storage.setString('userInfo', res.data.toString());
+                              storage.setString('userInfo', json.encode(res.data));
+                              storage.setString('token', res.data['token']);
                               Fluttertoast.showToast(msg: '登录成功');
                               Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Home()));
                             });
