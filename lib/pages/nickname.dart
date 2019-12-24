@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:vip_system/common/dialog.dart';
 import 'package:vip_system/utils/event_bus.dart';
 import 'dart:convert';
 
@@ -33,6 +35,7 @@ class NicknameState extends State {
     _nickname = nickname;
   }
 
+  // 修改昵称
   Future<ResponseModel> _changeNickname(content) async {
     return await _request.post('/app/admin/editInfo', data: {
       'id': _userId,
@@ -44,9 +47,11 @@ class NicknameState extends State {
 
   @override
   void initState() {
+    super.initState();
+
     // 设置初始默认值
     _controller.value = TextEditingValue(
-      text: _nickname,
+      text: _nickname == null ? '' : _nickname,
     );
 
     _share.then((share) {
@@ -56,8 +61,6 @@ class NicknameState extends State {
         _userId = _userInfo['id'];
       });
     });
-
-    super.initState();
   }
 
   Widget build(BuildContext context) {
@@ -90,20 +93,27 @@ class NicknameState extends State {
                   ),
                 ),
                 onPressed: () {
-//                  _changeNickname(context).then((res) {
-//                    if (res.code == 200) {
-//
-//                    }
-//                  });
-                  _share.then((share) {
-                    _userInfo['adminName'] = _nickname;
-                    share
-                        .setString('userInfo', json.encode(_userInfo))
-                        .then((s) {
-                      Fluttertoast.showToast(msg: '修改成功');
-                      eventBus.fire(UpdateInfoEvent());
-                      Navigator.pop(context);
-                    });
+                  // loading 弹窗
+                  ProgressDialog.showProgress(context,
+                    child: SpinKitFadingCircle(
+                      color: Colors.white,
+                      duration: Duration(seconds: 10),
+                    ),
+                  );
+                  _changeNickname(context).then((res) {
+                    if (res.code == 200) {
+                      _share.then((share) {
+                        _userInfo['adminName'] = _nickname;
+                        share
+                            .setString('userInfo', json.encode(_userInfo))
+                            .then((s) {
+                          Fluttertoast.showToast(msg: '修改成功');
+                          ProgressDialog.dismiss(context); // 关闭 loading
+                          eventBus.fire(UpdateInfoEvent());
+                          Navigator.pop(context);
+                        });
+                      });
+                    }
                   });
                 },
               ),

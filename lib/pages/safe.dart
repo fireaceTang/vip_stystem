@@ -1,5 +1,13 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:vip_system/pages/login.dart';
+
+import '../utils/request.dart';
+import '../model/request_model.dart';
 
 class Safe extends StatefulWidget {
   @override
@@ -12,9 +20,37 @@ class SafeState extends State {
     color: Color.fromRGBO(51, 51, 51, 1),
     fontSize: ScreenUtil.getInstance().setSp(14),
   );
-  GlobalKey _globalKey = GlobalKey<FormState>();
+  GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  String _oldPsw;
+  String _newPsw;
+  String _errorText_1;
+  String _errorText_2;
+  String _errorText_3;
+
+  Request _request = Request();
+  Future<SharedPreferences> _share = SharedPreferences.getInstance();
+  int _userId;
+
+  Future<ResponseModel> _changePsw () async {
+    return await _request.post(
+      '/app/admin/editInfo',
+      data: {
+        'id': _userId,
+        'oldPassword': _oldPsw,
+        'password': _newPsw,
+      }
+    );
+  }
 
   @override
+  void initState() {
+    super.initState();
+
+    // 获取用户 id
+    _share.then((share) {
+      _userId = json.decode(share.getString('userInfo'))['id'];
+    });
+  }
 
   Widget build(BuildContext context) {
     // TODO: implement build
@@ -38,7 +74,7 @@ class SafeState extends State {
         child: Container(
           padding: EdgeInsets.fromLTRB(ScreenUtil.getInstance().setWidth(15), 0, ScreenUtil.getInstance().setWidth(15), 0),
           child: Form(
-            key: _globalKey,
+            key: _formKey,
             child: Column(
               children: <Widget>[
                 Container(
@@ -65,7 +101,35 @@ class SafeState extends State {
                           decoration: InputDecoration(
                             border: InputBorder.none,
                             hintText: '请输入旧密码',
+                            counterText: _errorText_1,
+                            counterStyle: TextStyle(
+                              color: Colors.red,
+                            ),
                           ),
+                          autovalidate: true,
+                          onChanged: (v) {
+                            setState(() {
+                              _errorText_1 = null;
+                            });
+                          },
+                          onSaved: (value) {
+                            setState(() {
+                              if (value != '') {
+                                if (value.length < 6) {
+                                  _errorText_1 = '密码长度不能小于6位';
+                                  _errorText_2 = null;
+                                  _errorText_3 = null;
+                                } else {
+                                  _errorText_1 = null;
+                                  _oldPsw = value;
+                                }
+                              } else {
+                                _errorText_1 = '密码不能为空';
+                                _errorText_2 = null;
+                                _errorText_3 = null;
+                              }
+                            });
+                          },
                         ),
                       )
                     ],
@@ -95,7 +159,40 @@ class SafeState extends State {
                           decoration: InputDecoration(
                             border: InputBorder.none,
                             hintText: '请输入密码',
+                            errorMaxLines: 1,
+                            counterText: _errorText_2,
+                            counterStyle: TextStyle(
+                              color: Colors.red,
+                            ),
                           ),
+                          onChanged: (v) {
+                            setState(() {
+                              _errorText_2 = null;
+                            });
+                          },
+                          onSaved: (value) {
+                            setState(() {
+                              if (_errorText_1 == null) {
+                                if (value != '') {
+                                  if (value.length < 6) {
+                                    _errorText_2 = '密码长度不能小于6位';
+                                    _errorText_3 = null;
+                                  } else {
+                                    if (value == _oldPsw) {
+                                      _errorText_2 = '新旧密码不能一样';
+                                      _errorText_3 = null;
+                                    } else {
+                                      _errorText_2 = null;
+                                      _newPsw = value;
+                                    }
+                                  }
+                                } else {
+                                  _errorText_2 = '密码不能为空';
+                                  _errorText_3 = null;
+                                }
+                              }
+                            });
+                          },
                         ),
                       )
                     ],
@@ -125,7 +222,36 @@ class SafeState extends State {
                           decoration: InputDecoration(
                             border: InputBorder.none,
                             hintText: '请再次输入密码',
+                            errorMaxLines: 1,
+                            counterText: _errorText_3,
+                            counterStyle: TextStyle(
+                              color: Colors.red,
+                            ),
                           ),
+                          onChanged: (v) {
+                            setState(() {
+                              _errorText_3 = null;
+                            });
+                          },
+                          onSaved: (value) {
+                            setState(() {
+                              if (_errorText_1 == null && _errorText_2 == null) {
+                                if (value != '') {
+                                  if (value.length < 6) {
+                                    _errorText_3 = '密码长度不能小于6位';
+                                  } else {
+                                    if (value == _newPsw) {
+                                      _errorText_3 = null;
+                                    } else {
+                                      _errorText_3 = '两次输入密码不一致';
+                                    }
+                                  }
+                                } else {
+                                  _errorText_3 = '密码不能为空';
+                                }
+                              }
+                            });
+                          },
                         ),
                       )
                     ],
@@ -149,7 +275,23 @@ class SafeState extends State {
                       ),
                     ),
                     onPressed: () {
-                      Navigator.pop(context);
+                      _formKey.currentState.save();
+
+                      // 判断验证是否通过
+                      if (_errorText_1 == null && _errorText_2 == null && _errorText_3 == null) {
+                        _changePsw().then((result) {
+                          if (result.code == 200) {
+                            _share.then((share) {
+                              share.remove('userInfo').then((r) {
+                                Fluttertoast.showToast(msg: '修改成功，请重新登录');
+                                Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => Login()), (route) => route == null);
+                              });
+                            });
+                          }
+                        });
+                      } else {
+                        return;
+                      }
                     },
                   ),
                 ),

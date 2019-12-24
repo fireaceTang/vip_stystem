@@ -26,7 +26,7 @@ class Request {
       contentType: Headers.formUrlEncodedContentType,
     ));
 
-    // 监听事件
+    // 监听请求事件
     eventBus.on<RequestEvent>().listen((messageEvent) {
       if (messageEvent.responseModel.code != 200) {
         Fluttertoast.showToast(
@@ -54,6 +54,7 @@ class Request {
       onRequest: (RequestOptions options) async {
         SharedPreferences.getInstance().then((share) {
           String token = share.getString('token');
+          print(token);
           if (token != null) {
             options.headers['token'] = token;
           }
@@ -149,7 +150,7 @@ class Request {
       data: formData,
     );
 
-    ResponseModel<String> result = ResponseModel.fromJson(response.data);
+    ResponseModel<List<dynamic>> result = ResponseModel.fromJson(response.data);
 
     eventBus.fire(new RequestEvent(result));
 

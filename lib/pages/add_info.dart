@@ -1,9 +1,18 @@
 import 'dart:io';
+import 'dart:convert';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:vip_system/common/dialog.dart';
+import 'package:vip_system/model/request_model.dart';
+import 'package:vip_system/model/vipAdd.dart';
+import 'package:vip_system/utils/request.dart';
 
 class AddInfo extends StatefulWidget {
   @override
@@ -18,56 +27,149 @@ class AddInfoState extends State<AddInfo> {
     color: Color.fromRGBO(102, 102, 102, 1),
   );
 
-  GlobalKey _formKey = GlobalKey<FormState>();
+  GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   File _image;
+  Map _userInfo; // 用户信息
 
   int _pickerIndex;
   int _selectIndex;
-  List<String> _userLevel = [
-    '青铜会员',
-    '白银会员',
-    '黄金会员',
-    '铂金会员',
-  ];
-  List<Widget> _pickerItems = new List<Widget>();
+  int _pickerIndex_1;
+  int _selectIndex_1;
+  int _unitId; // 公司id
+  List<dynamic> _userLevel;
+  List<dynamic> _deviceList;
+  List<Widget> _pickerLevel = new List<Widget>();
+  List<Widget> _pickerDevice = new List<Widget>();
 
-  //拍照
-  Future _getImageFromCamera() async {
-    var image = await ImagePicker.pickImage(source: ImageSource.camera, maxWidth: 400);
+  // vip 新增
+  VipAdd _vip = VipAdd();
+  bool _isShowToast = false; // 用于保证每次弹窗只有一个
 
-    setState(() {
-      _image = image;
-    });
+  Request _request = Request();
+  
+  Future<SharedPreferences> _share = SharedPreferences.getInstance();
+
+  // 获取用户等级
+  Future<ResponseModel> _getLevelList() async {
+    return await _request.get(
+      '/app/label/list',
+      data: {
+        'unitId': _unitId,
+      }
+    );
+  }
+
+  // 设备列表
+  Future<ResponseModel> _getDeviceList() async {
+    return await _request.get(
+      '/app/face/deviceList',
+      data: null
+    );
+  }
+
+  Future<ResponseModel> _addVip() async {
+    return await _request.post(
+      '/app/face/addVip',
+      data: _vip.toJson()
+    );
   }
 
   // 相册选择
   Future _getImageFromGallery() async {
     var image = await ImagePicker.pickImage(source: ImageSource.gallery);
 
-    setState(() {
-      _image = image;
+    if (image != null) {
+      handleData(image);
+    }
+  }
+
+  // 调用图片上传
+  void handleData(File image) {
+    // loading 弹窗
+    ProgressDialog.showProgress(context,
+      child: SpinKitFadingCircle(
+        color: Colors.white,
+        duration: Duration(seconds: 10),
+      ),
+    );
+    _imageUpload(image.path).then((result) {
+//      String _cacheUrl = result.data[0];
+      if (result.code == 200) {
+        _vip.avatar = result.data[0];
+        _image = image;
+        image = null;
+        ProgressDialog.dismiss(context); // 关闭 loading
+      }
     });
+  }
+
+  // 图片上传
+  Future<ResponseModel> _imageUpload (imageUrl) async {
+    return await _request.upload(
+      '/web/upload/img',
+      FormData.fromMap({
+        'request': MultipartFile.fromFileSync(imageUrl),
+      }),
+    );
   }
 
   @override
   void initState() {
-    setState(() {
-      _userLevel.forEach((item) {
-        _pickerItems.add(
-          Container(
-            height: ScreenUtil.getInstance().setHeight(40),
-            child: Center(
-              child: Text(item, style: _textStyle,),
-            ),
-          ),
-        );
-      });
-
-      print(_pickerItems);
-      print(_pickerItems.length);
-    });
-
     super.initState();
+
+    _share.then((share) {
+      setState(() {
+        _userInfo = json.decode(share.getString('userInfo'));
+        _unitId = _userInfo['unitId'];
+        _vip.userId = _userInfo['id'];
+        _vip.unitId = _unitId;
+
+        // 用户属性，下拉列表
+        _getLevelList().then((result) {
+          print(result);
+          if (result.code == 200) {
+            setState(() {
+              _userLevel = result.data;
+
+              // 遍历添加下拉选择框
+              _userLevel.forEach((item) {
+                _pickerLevel.add(
+                  Container(
+                    height: ScreenUtil.getInstance().setHeight(50),
+                    child: Center(
+                      child: Text(item['labelName'], style: _textStyle,),
+                    ),
+                  ),
+                );
+              });
+            });
+          }
+        });
+
+        // 设备列表
+        _getDeviceList().then((result) {
+          if (result.code == 200) {
+            setState(() {
+              print(result);
+              _deviceList = result.data;
+
+              // 遍历添加下拉选择框
+              _deviceList.forEach((item) {
+                _pickerDevice.add(
+                  Container(
+                    height: ScreenUtil.getInstance().setHeight(50),
+                    child: Center(
+                      child: Text(item['name'], style: _textStyle,),
+                    ),
+                  ),
+                );
+              });
+            });
+          }
+        });
+
+      });
+    });
   }
 
   Widget build(BuildContext context) {
@@ -110,12 +212,12 @@ class AddInfoState extends State<AddInfo> {
                             child: Container(
                               height: ScreenUtil.getInstance().setHeight(83),
                               decoration: BoxDecoration(
-                                  border: Border(
-                                      bottom: BorderSide(
-                                          width: 1,
-                                          color: Color.fromRGBO(245, 246, 246, 1)
-                                      )
-                                  )
+                                border: Border(
+                                  bottom: BorderSide(
+                                    width: 1,
+                                    color: Color.fromRGBO(245, 246, 246, 1),
+                                  ),
+                                ),
                               ),
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -150,12 +252,12 @@ class AddInfoState extends State<AddInfo> {
                             height: ScreenUtil.getInstance().setHeight(68),
                             padding: EdgeInsets.fromLTRB(0, ScreenUtil.getInstance().setWidth(5), 0, ScreenUtil.getInstance().setWidth(5)),
                             decoration: BoxDecoration(
-                                border: Border(
-                                    bottom: BorderSide(
-                                        width: 1,
-                                        color: Color.fromRGBO(245, 246, 246, 1)
-                                    )
-                                )
+                              border: Border(
+                                bottom: BorderSide(
+                                  width: 1,
+                                  color: Color.fromRGBO(245, 246, 246, 1),
+                                ),
+                              ),
                             ),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -175,6 +277,19 @@ class AddInfoState extends State<AddInfo> {
                                       ),
                                       border: InputBorder.none,
                                     ),
+                                    onSaved: (name) {
+                                      setState(() {
+                                        if (name.isEmpty) {
+                                          if (!_isShowToast) {
+                                            Fluttertoast.showToast(msg: '姓名不能为空');
+                                            _isShowToast = true;
+                                          }
+                                        } else {
+                                          _vip.vipName = name;
+                                          _isShowToast = false;
+                                        }
+                                      });
+                                    },
                                   ),
                                 ),
                               ],
@@ -208,6 +323,19 @@ class AddInfoState extends State<AddInfo> {
                                       ),
                                       border: InputBorder.none,
                                     ),
+                                    onSaved: (telephone) {
+                                      setState(() {
+                                        if (telephone.isEmpty) {
+                                          if (!_isShowToast) {
+                                            Fluttertoast.showToast(msg: '联系电话不能为空');
+                                            _isShowToast = true;
+                                          }
+                                        } else {
+                                          _vip.telephone = telephone;
+                                          _isShowToast = false;
+                                        }
+                                      });
+                                    },
                                   ),
                                 ),
                               ],
@@ -222,13 +350,13 @@ class AddInfoState extends State<AddInfo> {
                                   Text('用户属性', style: _textStyle),
                                   Container(
                                     width: ScreenUtil.getInstance().setWidth(135),
-                                    height: ScreenUtil.getInstance().setHeight(50),
+                                    height: ScreenUtil.getInstance().setHeight(60),
                                     alignment: Alignment.centerRight,
                                     padding: EdgeInsets.fromLTRB(0, ScreenUtil.getInstance().setHeight(15), 0, ScreenUtil.getInstance().setHeight(15)),
                                     child: Row(
                                       mainAxisAlignment: MainAxisAlignment.end,
                                       children: <Widget>[
-                                        Text(_selectIndex != null ? _userLevel[_selectIndex] : '请选择会员等级',
+                                        Text(_selectIndex != null ? _userLevel[_selectIndex]['labelName'] : '请选择会员等级',
                                           style: _selectIndex != null ? _textStyle : TextStyle(
                                             color: Color.fromRGBO(153, 153, 153, 1),
                                             fontSize: ScreenUtil.getInstance().setSp(14),
@@ -252,8 +380,9 @@ class AddInfoState extends State<AddInfo> {
                                         itemExtent: 40,
                                         backgroundColor: Colors.white,
                                         useMagnifier: true,
-                                        children: _pickerItems,
+                                        children: _pickerLevel,
                                         onSelectedItemChanged: (index) {
+                                          print(index);
                                           setState(() {
                                             _pickerIndex = index;
                                           });
@@ -264,8 +393,73 @@ class AddInfoState extends State<AddInfo> {
                                       setState(() {
                                         if (_pickerIndex == null) {
                                           _pickerIndex = 0;
+                                          _selectIndex = 0;
                                         } else {
                                           _selectIndex = _pickerIndex;
+                                        }
+                                      });
+                                      Navigator.pop(context);
+                                    },
+                                  );
+                                },
+                              );
+                            },
+                          ),
+                          GestureDetector(
+                            child: Container(
+                              height: ScreenUtil.getInstance().setHeight(68),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: <Widget>[
+                                  Text('设备', style: _textStyle),
+                                  Container(
+                                    width: ScreenUtil.getInstance().setWidth(135),
+                                    height: ScreenUtil.getInstance().setHeight(60),
+                                    alignment: Alignment.centerRight,
+                                    padding: EdgeInsets.fromLTRB(0, ScreenUtil.getInstance().setHeight(15), 0, ScreenUtil.getInstance().setHeight(15)),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.end,
+                                      children: <Widget>[
+                                        Text(_selectIndex_1 != null ? _deviceList[_selectIndex_1]['name'] : '请选择设备',
+                                          style: _selectIndex_1 != null ? _textStyle : TextStyle(
+                                            color: Color.fromRGBO(153, 153, 153, 1),
+                                            fontSize: ScreenUtil.getInstance().setSp(14),
+                                          ),
+                                        ),
+                                        Icon(Icons.arrow_drop_down)
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            onTap: () {
+                              showModalBottomSheet(
+                                context: context,
+                                builder: (context) {
+                                  return GestureDetector(
+                                    child: Container(
+                                      height: ScreenUtil.getInstance().setHeight(160),
+                                      child: CupertinoPicker(
+                                        itemExtent: 40,
+                                        backgroundColor: Colors.white,
+                                        useMagnifier: true,
+                                        children: _pickerDevice,
+                                        onSelectedItemChanged: (index) {
+                                          print(index);
+                                          setState(() {
+                                            _pickerIndex_1 = index;
+                                          });
+                                        },
+                                      ),
+                                    ),
+                                    onTap: () {
+                                      setState(() {
+                                        if (_pickerIndex_1 == null) {
+                                          _pickerIndex_1 = 0;
+                                          _selectIndex_1 = 0;
+                                        } else {
+                                          _selectIndex_1 = _pickerIndex_1;
                                         }
                                       });
                                       Navigator.pop(context);
@@ -291,7 +485,7 @@ class AddInfoState extends State<AddInfo> {
                           Container(
                             height: ScreenUtil.getInstance().setHeight(127),
                             margin: EdgeInsets.only(
-                              top: ScreenUtil.getInstance().setHeight(10)
+                              top: ScreenUtil.getInstance().setHeight(10),
                             ),
                             child: TextFormField(
                               maxLines: 5,
@@ -307,14 +501,28 @@ class AddInfoState extends State<AddInfo> {
                                   ),
                                 ),
                               ),
+                              onSaved: (content) {
+                                setState(() {
+                                  if (content.isEmpty) {
+                                    if (!_isShowToast) {
+                                      Fluttertoast.showToast(msg: '备注不能为空');
+                                      _isShowToast = true;
+                                    }
+                                  } else {
+                                    _vip.content = content;
+                                    _isShowToast = false;
+                                  }
+                                });
+                              },
                             ),
                           ),
                           Container(
                             child: Container(
                               width: ScreenUtil.getInstance().setWidth(336),
                               height: ScreenUtil.getInstance().setHeight(40),
-                              margin: EdgeInsets.only(
-                                top: ScreenUtil.getInstance().setHeight(28)
+                              margin: EdgeInsets.fromLTRB(
+                                0, ScreenUtil.getInstance().setHeight(28),
+                                0, ScreenUtil.getInstance().setHeight(28),
                               ),
                               child: FlatButton(
                                 color: Color.fromRGBO(255, 164, 6, 1),
@@ -323,7 +531,45 @@ class AddInfoState extends State<AddInfo> {
                                     fontSize: ScreenUtil.getInstance().setSp(14)
                                 ),),
                                 onPressed: () {
-                                  Navigator.pop(context);
+                                  _formKey.currentState.save();
+
+                                  setState(() {
+                                    if (_image == null) {
+                                      if (!_isShowToast) {
+                                        Fluttertoast.showToast(msg: '头像不能为空');
+                                        _isShowToast = true;
+                                      }
+                                    }
+
+                                    if (_selectIndex == null) {
+                                      if (!_isShowToast) {
+                                        Fluttertoast.showToast(msg: '用户属性不能为空');
+                                        _isShowToast = true;
+                                      }
+                                    } else {
+                                      _vip.labelId = _userLevel[_selectIndex]['id'];
+                                      _isShowToast = false;
+                                    }
+
+                                    if (_selectIndex_1 == null) {
+                                      if (!_isShowToast) {
+                                        Fluttertoast.showToast(msg: '设备不能为空');
+                                        _isShowToast = true;
+                                      }
+                                    } else {
+                                      _vip.uuid = _deviceList[_selectIndex_1]['equipmentId'];
+                                      _isShowToast = false;
+                                    }
+
+                                    if (!_isShowToast) {
+                                      _addVip().then((result) {
+                                        if (result.code == 200) {
+                                          Fluttertoast.showToast(msg: '成功');
+                                          Navigator.pop(context);
+                                        }
+                                      });
+                                    }
+                                  });
                                 },
                               ),
                             ),

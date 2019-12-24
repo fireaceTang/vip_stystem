@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -15,14 +18,16 @@ class MyInfo extends StatefulWidget {
 
 class User {
   int id;
+  String unitName;
   String nickname;
   String cover;
   String phoneNumber;
 
-  User({this.id, this.nickname, this.cover, this.phoneNumber});
+  User({this.id, this.unitName, this.nickname, this.cover, this.phoneNumber});
 
   User.formJson(Map<String, dynamic> json)
       : id = json['id'],
+        unitName = json['unitName'],
         nickname = json['adminName'],
         cover = json['avatar'],
         phoneNumber = json['telephone'];
@@ -35,6 +40,7 @@ class MyInfoState extends State {
     color: Color.fromRGBO(102, 102, 102, 1),
   );
 
+  StreamSubscription _updateUserInfo; // 事件流
   User _user = User();
   Map _userInfo;
 
@@ -43,18 +49,28 @@ class MyInfoState extends State {
 
   @override
   void initState() {
-    if (this.mounted) {
-      eventBus.on<UpdateInfoEvent>().listen((messageEvent) {
-        if (this.mounted) {}
-      });
-    }
     super.initState();
+    getUserInfo();
+
+    // 用户信息更新事件
+    _updateUserInfo = eventBus.on<UpdateInfoEvent>().listen((messageEvent) {
+      getUserInfo();
+    });
+  }
+
+  // 获取用户信息
+  void getUserInfo() {
     _share.then((share) {
       setState(() {
         _userInfo = json.decode(share.getString('userInfo'));
         _user = User.formJson(_userInfo);
       });
     });
+  }
+
+  void dispose() {
+    super.dispose();
+    _updateUserInfo.cancel();
   }
 
   Widget build(BuildContext context) {
@@ -83,56 +99,76 @@ class MyInfoState extends State {
             ScreenUtil.getInstance().setWidth(15), 0),
         child: Column(
           children: <Widget>[
-            GestureDetector(
-              child: Container(
-                height: ScreenUtil.getInstance().setHeight(83),
-                decoration: BoxDecoration(
-                    border: Border(
-                        bottom: BorderSide(
-                  width: 1,
-                  color: Color.fromRGBO(245, 246, 246, 1),
-                ))),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: <Widget>[
-                    Text('设置头像', style: _textStyle),
-                    GestureDetector(
-                      child: Container(
-                        child: Row(
-                          children: <Widget>[
-                            CircleAvatar(
-                              backgroundImage: NetworkImage(
-                                  _user.cover == null ? '' : _user.cover),
-                              radius: ScreenUtil.getInstance().setWidth(30),
+            Container(
+              height: ScreenUtil.getInstance().setHeight(83),
+              decoration: BoxDecoration(
+                  border: Border(
+                      bottom: BorderSide(
+                        width: 1,
+                        color: Color.fromRGBO(245, 246, 246, 1),
+                      ))),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: <Widget>[
+                  Text('设置头像', style: _textStyle),
+                  GestureDetector(
+                    child: Container(
+                      child: Row(
+                        children: <Widget>[
+                          CircleAvatar(
+                            backgroundImage: _user.cover != null
+                              ? CachedNetworkImageProvider(_user.cover)
+                              : AssetImage('images/image_none.png'),
+                            backgroundColor: Colors.white,
+                            radius: ScreenUtil.getInstance().setWidth(30),
+                          ),
+                          Container(
+                            margin: EdgeInsets.only(
+                                left: ScreenUtil.getInstance().setWidth(15)),
+                            child: Icon(
+                              Icons.arrow_forward_ios,
+                              color: _textColor,
+                              size: ScreenUtil.getInstance().setWidth(14),
                             ),
-                            Container(
-                              margin: EdgeInsets.only(
-                                  left: ScreenUtil.getInstance().setWidth(15)),
-                              child: Icon(
-                                Icons.arrow_forward_ios,
-                                color: _textColor,
-                                size: ScreenUtil.getInstance().setWidth(14),
-                              ),
-                            )
-                          ],
-                        ),
+                          )
+                        ],
                       ),
-                      onTap: () {
-                        Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => MyAvatar(
-                                avatar: _user.cover,
-                              ),
-                            ));
-                      },
                     ),
-                  ],
+                    onTap: () {
+                      Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => MyAvatar(
+                              avatar: _user.cover,
+                            ),
+                          ));
+                    },
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              height: ScreenUtil.getInstance().setHeight(68),
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(
+                    width: 1,
+                    color: Color.fromRGBO(245, 246, 246, 1),
+                  ),
                 ),
               ),
-              onTap: () {
-                print(111);
-              },
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: <Widget>[
+                  Text('公司', style: _textStyle),
+                  Container(
+                    child: Text(
+                      _user.unitName != null ? _user.unitName : '',
+                      style: TextStyle(color: _textColor, height: 1),
+                    ),
+                  ),
+                ],
+              ),
             ),
             GestureDetector(
               child: Container(

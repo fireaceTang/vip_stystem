@@ -7,6 +7,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 
+import '../main.dart';
 import 'download.dart';
 
 class Setting extends StatefulWidget {
@@ -22,25 +23,91 @@ class SettingState extends State {
   );
 
   PermissionStatus permission;
-
-  bool _isGetLocation = false;
-  bool _isGetPhotos = false;
-  bool _isGetMsg = false;
   String _cacheSizeStr;
+
+  List<Map<String, dynamic>> _permissionList = [
+    {
+      'permission': PermissionGroup.storage,
+      'name': '本地存储',
+      'hasPermission': false,
+    },
+    {
+      'permission': PermissionGroup.camera,
+      'name': '访问相册',
+      'hasPermission': false,
+    },
+    {
+      'permission': PermissionGroup.camera,
+      'name': '系统相机',
+      'hasPermission': false,
+    }
+  ];
 
 
   @override
   void initState () {
+    super.initState();
+
     // 获取缓存大小
     loadCache();
 
-    testing();
-    super.initState();
+    for (var i = 0; i < _permissionList.length; i++) {
+      checkPermission(_permissionList[i]['permission'], i);
+    }
   }
 
-  void testing () async{
-    PermissionStatus permission = await PermissionHandler().checkPermissionStatus(PermissionGroup.contacts);
-    print(permission);
+  // 检查权限
+  Future<bool> checkPermission (PermissionGroup per, int index) async{
+    PermissionStatus permission = await PermissionHandler().checkPermissionStatus(per);
+    if (permission == PermissionStatus.granted) {
+      _permissionList[index]['hasPermission'] = true;
+      return true;
+    } else {
+      _permissionList[index]['hasPermission'] = false;
+      return false;
+    }
+  }
+
+  // 申请权限
+  Future<bool> changePermission (PermissionGroup per) async {
+    Map<PermissionGroup, PermissionStatus> permissions = await PermissionHandler().requestPermissions([per]);
+    print(permissions);
+
+    if (permissions[per] == PermissionStatus.granted) {
+      return true;
+    } else {
+      if (permissions[per] == PermissionStatus.denied) {
+        Fluttertoast.showToast(msg: '连接被拒绝,请进入设置页面进行修改');
+//        openPermission();
+      }
+      return false;
+    }
+  }
+
+  // 打开应用程序设置
+  void openPermission () async {
+    bool isOpened = await PermissionHandler().openAppSettings();
+    print(isOpened);
+  }
+
+  // switch 数据处理
+  void switchHandler(bool value, int index) {
+    if (value) {
+      // 申请权限
+      changePermission(_permissionList[index]['permission']).then((res) {
+        if (res) {
+          setState(() {
+            _permissionList[index]['hasPermission'] = value;
+          });
+        } else {
+          setState(() {
+            _permissionList[index]['hasPermission'] = !value;
+          });
+        }
+      });
+    } else {
+      Fluttertoast.showToast(msg: '请进入系统设置页面进行修改');
+    }
   }
 
   Widget build(BuildContext context) {
@@ -90,16 +157,14 @@ class SettingState extends State {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: <Widget>[
-                        Text('获取位置', style: _textStyle,),
+                        Text(_permissionList[0]['name'], style: _textStyle,),
                         Transform.scale(
                           scale: 0.7,
                           child: CupertinoSwitch(
-                            value: _isGetLocation,
+                            value: _permissionList[0]['hasPermission'],
                             activeColor: Colors.green,
                             onChanged: (value) {
-                              setState(() {
-                                _isGetLocation = value;
-                              });
+                              switchHandler(value, 0);
                             },
                           ),
                         ),
@@ -120,16 +185,14 @@ class SettingState extends State {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: <Widget>[
-                        Text('访问相册', style: _textStyle,),
+                        Text(_permissionList[1]['name'], style: _textStyle,),
                         Transform.scale(
                           scale: 0.7,
                           child: CupertinoSwitch(
-                            value: _isGetPhotos,
+                            value: _permissionList[1]['hasPermission'],
                             activeColor: Colors.green,
                             onChanged: (value) {
-                              setState(() {
-                                _isGetPhotos = value;
-                              });
+                              switchHandler(value, 1);
                             },
                           ),
                         ),
@@ -150,16 +213,14 @@ class SettingState extends State {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: <Widget>[
-                        Text('消息通知', style: _textStyle,),
+                        Text(_permissionList[2]['name'], style: _textStyle,),
                         Transform.scale(
                           scale: 0.7,
                           child: CupertinoSwitch(
-                            value: _isGetMsg,
+                            value: _permissionList[2]['hasPermission'],
                             activeColor: Colors.green,
                             onChanged: (value) {
-                              setState(() {
-                                _isGetMsg = value;
-                              });
+                              switchHandler(value, 2);
                             },
                           ),
                         ),
@@ -173,30 +234,30 @@ class SettingState extends State {
               padding: EdgeInsets.fromLTRB(ScreenUtil.getInstance().setWidth(15), 0, ScreenUtil.getInstance().setWidth(15), 0),
               child: Column(
                 children: <Widget>[
-                  GestureDetector(
-                    child: Container(
-                      height: ScreenUtil.getInstance().setHeight(70),
-                      decoration: BoxDecoration(
-                        border: Border(
-                          bottom: BorderSide(
-                            width: 1,
-                            color: Color.fromRGBO(245, 246, 246, 1),
-                          ),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: <Widget>[
-                          Text('推荐下载', style: _textStyle,),
-                          Icon(Icons.keyboard_arrow_right, color: _textColor,),
-                        ],
-                      ),
-                    ),
-                    onTap: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (context) => Download()));
-                    },
-                  ),
+//                  GestureDetector(
+//                    child: Container(
+//                      height: ScreenUtil.getInstance().setHeight(70),
+//                      decoration: BoxDecoration(
+//                        border: Border(
+//                          bottom: BorderSide(
+//                            width: 1,
+//                            color: Color.fromRGBO(245, 246, 246, 1),
+//                          ),
+//                        ),
+//                      ),
+//                      child: Row(
+//                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+//                        crossAxisAlignment: CrossAxisAlignment.center,
+//                        children: <Widget>[
+//                          Text('推荐下载', style: _textStyle,),
+//                          Icon(Icons.keyboard_arrow_right, color: _textColor,),
+//                        ],
+//                      ),
+//                    ),
+//                    onTap: () {
+//                      Navigator.push(context, MaterialPageRoute(builder: (context) => Download()));
+//                    },
+//                  ),
                   GestureDetector(
                     child: Container(
                       height: ScreenUtil.getInstance().setHeight(68),
@@ -216,7 +277,7 @@ class SettingState extends State {
                           Container(
                             child: Row(
                               children: <Widget>[
-                                Text(_cacheSizeStr),
+                                Text(_cacheSizeStr != null ? _cacheSizeStr : ''),
                                 Icon(Icons.keyboard_arrow_right, color: _textColor,),
                               ],
                             ),
